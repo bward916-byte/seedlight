@@ -136,8 +136,8 @@ const REQ={grass:0,flower:1,shrub:1,oak:1,pine:1,ancient:0,vine:1,moss:1,bough:1
 const MOTE={grass:['sun',1],flower:['sun',1],shrub:['sun',2],oak:['sun',3],pine:['sun',3],ancient:['amber',1],vine:['sun',1],moss:['dew',1],bough:['sun',2],fungus:['spore',1],alpine:['sun',1],stump:['sun',0]};
 const AURA_R={grass:120,flower:140,shrub:150,oak:170,pine:170,ancient:180,vine:170,moss:170,bough:260,fungus:150,stump:200,alpine:140};
 
-const world={solids:[],oneway:[],vines:[],moss:[],targets:[],enemies:[],shrines:[],glades:[],gates:[],caves:[],pickups:[],decor:[],pines:[],bounds:{x0:-600,x1:9400}};
-const SLOT={x0:5000,x1:8600,wallL:5000,wallR:8600,top:-7560,floor:-40};
+const world={solids:[],oneway:[],vines:[],moss:[],targets:[],enemies:[],shrines:[],glades:[],gates:[],caves:[],pickups:[],decor:[],pines:[],bounds:{x0:-600,x1:7400}};
+const SLOT={x0:5000,x1:6600,wallL:5000,wallR:6600,top:-7560,floor:-40};
 let tid=0;
 function solid(x,y,w,h,kind,ex){const s=Object.assign({x,y,w,h,kind},ex||{});world.solids.push(s);return s}
 function T(kind,x,y,ex){const t=Object.assign({id:tid++,kind,x,y,t:0,dur:DUR[kind],alive:false,seed:(tid*7919+13)%100000,req:REQ[kind],glade:null,r:AURA_R[kind],sway:Math.random()*TAU,bake:null,hidden:false},ex||{});world.targets.push(t);return t}
@@ -149,21 +149,22 @@ function buildWorld(){
   // ---- bounds ----
   solid(-1000,-4000,400,5000,'wall');
   // ---- HOLLOW VALE ground ----
-  const G=[[-600,1500,-40],[1500,2700,-80],[2700,3600,-120],[3600,5000,-80],[5000,8600,-40]];
+  const G=[[-600,1500,-40],[1500,2700,-80],[2700,3600,-120],[3600,5000,-80],[5000,6600,-40]];
   for(const [a,b,y] of G){solid(a,y,b-a,1400,'ground');}
-  // hills / rocks in the vale
-  solid(900,-220,260,150,'rock');           // boulder
-  solid(2000,-460,300,60,'rock',{shard:1}); // ancient oak ledge (reach via oak bough)
-  solid(3250,-320,220,60,'rock',{shard:1});
-  solid(4000,-500,220,60,'rock',{shard:1}); // double-jump reward ledge
+  // crags: rock growing out of the ground (never floating)
+  solid(900,-220,260,220,'crag');            // boulder to hop
+  solid(2000,-460,300,420,'crag');           // the ancient oak's crag (reach via the oak bough at 1750)
+  solid(3250,-320,220,240,'crag');
+  solid(4000,-500,220,460,'crag');           // double-jump reward crag
+  grassRow(900,1160,-220,70);grassRow(2000,2300,-460,70);grassRow(3250,3470,-320,70);grassRow(4000,4220,-500,70);
   // mountain body (right half of vale, above), cave carved at pocket 1
   solid(2600,-7560,2100,5480,'wall');              // -7560 .. -2080 (plateau top is the Crown)
   solid(3400,-1860,1300,460,'wall');               // -1860 .. -1400
   // canyon walls (left wall has an arch at the bottom and the cave opening at -2080..-1860)
   solid(4700,-7560,300,5480,'wall');               // left wall upper  -7560..-2080
   solid(4700,-1860,300,1560,'wall');               // left wall lower  -1860..-300  (arch below)
-  solid(8600,-7560,400,7520,'wall');               // right wall
-  solid(9000,-9000,400,1440,'wall');               // right plateau backstop
+  solid(6600,-7560,400,7520,'wall');               // right wall
+  solid(7000,-9000,400,1440,'wall');               // right plateau backstop
   // Crown plateau (top of mountain body) + backstop
   solid(2200,-8800,400,1240,'wall');
   // cave interior floor (x 3600..4700 between y -2080 and -1860): floor is the wall rect below; add a step
@@ -174,29 +175,29 @@ function buildWorld(){
   gate(4700,-300,300,260,'B');                     // arch into the canyon
   // ---- Vale targets ----
   for(const [a,b,y] of G.slice(0,4)) grassRow(a<0?0:a,b,y,95);
-  grassRow(5000,8600,-40,110);
-  const oaks=[[700,-40],[1300,-40],[1750,-80],[2150,-80],[3050,-120],[3900,-80],[4500,-80],[5400,-40],[6300,-40],[7300,-40],[8200,-40]];
+  grassRow(5000,6600,-40,110);
+  const oaks=[[700,-40],[1300,-40],[1750,-80],[2150,-80],[3050,-120],[3900,-80],[4500,-80],[5400,-40],[6250,-40]];
   for(const [x,y] of oaks)T('oak',x,y);
   T('ancient',2150,-460,{hidden:true});
-  const flowers=[[420,-40],[1050,-40],[1620,-80],[2000,-80],[2350,-80],[2820,-120],[3350,-320],[3500,-120],[3750,-80],[4100,-500],[4300,-80],[4750,-80],[5250,-40],[5900,-40],[6800,-40],[7800,-40]];
+  const flowers=[[420,-40],[1050,-40],[1620,-80],[2000,-80],[2350,-80],[2820,-120],[3350,-320],[3500,-120],[3750,-80],[4100,-500],[4300,-80],[4750,-80],[5250,-40],[5900,-40],[6450,-40]];
   for(const [x,y] of flowers)T('flower',x,y);
-  for(const [x,y] of [[560,-40],[1480,-40],[2550,-80],[3200,-120],[4200,-80],[5700,-40],[6600,-40],[8000,-40]])T('shrub',x,y);
+  for(const [x,y] of [[560,-40],[1480,-40],[2550,-80],[3200,-120],[4200,-80],[5700,-40]])T('shrub',x,y);
   // shrines
   w.shrines.push({x:2560,y:-80,id:'vale',opened:false,name:"The Elder's Hand"});
   // enemies vale B
   enemy('shambler',3000,-120);enemy('shambler',3850,-80);enemy('shambler',4420,-80);
-  enemy('shambler',6000,-40);enemy('shambler',7500,-40);
+  enemy('shambler',6000,-40);
   // ---- CANYON ----
   buildCanyon();
   // ---- glades ----
   glade('The Hollow Vale',-600,2400,-1400,200,'A');
   glade('The Ash Field',2400,4700,-1400,200,'B');
   const gy=k=>world.gates.find(g=>g.key===k).y;
-  glade('The Canyon Mouth',4700,8600,gy('C'),200,'C');
-  glade('The First Shelf',4700,8600,gy('D'),gy('C'),'D');
-  glade('The Second Shelf',4700,8600,gy('E'),gy('D'),'E');
-  glade('The High Shelf',4700,8600,gy('F'),gy('E'),'F');
-  const crown=glade('The Crown',2200,8600,-9000,gy('F'),'G');crown.noVerd=true;
+  glade('The Canyon Mouth',4700,7000,gy('C'),200,'C');
+  glade('The First Shelf',4700,7000,gy('D'),gy('C'),'D');
+  glade('The Second Shelf',4700,7000,gy('E'),gy('D'),'E');
+  glade('The High Shelf',4700,7000,gy('F'),gy('E'),'F');
+  const crown=glade('The Crown',2200,7400,-9000,gy('F'),'G');crown.noVerd=true;
   for(const t of w.targets){for(const g of w.glades){if(t.x>=g.x0&&t.x<g.x1&&t.y>=g.y0&&t.y<g.y1){t.glade=g;if(t.req&&!t.hidden)g.req.push(t);break}}}
   for(const g of w.glades)g.total=w.targets.filter(t=>t.glade===g).length;
   // link gates to glades
@@ -205,84 +206,67 @@ function buildWorld(){
 function gate(x,y,w,h,key){const g={x,y,w,h,key,open:false,anim:0};world.gates.push(g);return g}
 function glade(name,x0,x1,y0,y1,key){const g={name,x0,x1,y0,y1,key,req:[],done:false,ash:1,total:0};world.glades.push(g);return g}
 
-/* ---- canyon generator: deterministic switchback ascent ---- */
+/* ---- canyon generator: rock shelves jutting from the walls, vines and boughs on the wall faces ---- */
 function buildCanyon(){
   const R=mulberry(20260906);
   const rnd=(a,b)=>a+R()*(b-a);
-  const pockets=[{y:-1900,x0:5000,x1:7600,side:-1},{y:-3900,x0:6000,x1:8600,side:1},{y:-5900,x0:5000,x1:7200,side:-1}];
-  const free=(nx,ny,lw)=>{const r={x:nx-30,y:ny-200,w:lw+60,h:236};return !world.solids.some(o=>o.kind!=='wall'&&rectsHit(r,o))&&!world.vines.some(v=>(ny>v.y1-80&&ny<v.y0+80)&&(Math.abs(v.x-nx)<90||Math.abs(v.x-(nx+lw))<90))};
-  const addLedge=(x,y,w,ex)=>{let nx=x,ny=y;const tries=[[0,0],[120,0],[-120,0],[240,0],[-240,0],[0,-70],[120,-70],[-120,-70],[360,0],[-360,0],[0,-140]];let placed=false;
-    for(const [dx,dy] of tries){const tx=clamp(x+dx,SLOT.wallL+((ex&&ex.wall)?0:20),SLOT.wallR-w-((ex&&ex.wall)?0:20));if((ex&&ex.wall)&&dx!==0)continue;if(free(tx,y+dy,w)){nx=tx;ny=y+dy;placed=true;break}}
-    if(!placed){ny=y-210}const L=solid(nx,ny,w,36,'rock',Object.assign({shard:1},ex||{}));return L};
-  // pocket floors + contents
-  for(const p of pockets){
-    solid(p.x0,p.y,p.x1-p.x0,140,'ground',{pocket:1});
-    grassRow(p.x0,p.x1,p.y,120);
-    const cx=(p.x0+p.x1)/2;
-    T('pine',cx-500,p.y);T('pine',cx+420,p.y);T('flower',cx-150,p.y);T('flower',cx+200,p.y);T('shrub',cx+40,p.y);
-    if(p.y===-3900){world.shrines.push({x:cx+600,y:p.y,id:'shelf',opened:false,name:"The Second Hand"});enemy('shambler',cx-200,p.y)}
-    if(p.y===-5900){enemy('shambler',cx+250,p.y);T('flower',cx+700,p.y)}
+  const SW=SLOT.wallR-SLOT.wallL;            // slot width
+  const pockets=[{y:-1900,w:1200,side:-1},{y:-3900,w:1200,side:1},{y:-5900,w:1200,side:-1}];
+  const shelf=(side,y,w,ex)=>{const x=side<0?SLOT.wallL:SLOT.wallR-w;return solid(x,y,w,70,'rock',Object.assign({shelf:1,wall:side},ex||{}))};
+  for(const p of pockets){p.x0=p.side<0?SLOT.wallL:SLOT.wallR-p.w;p.x1=p.x0+p.w;
+    solid(p.x0,p.y,p.w,140,'ground',{pocket:1});grassRow(p.x0,p.x1,p.y,120);
+    const cx=(p.x0+p.x1)/2;T('pine',cx-400,p.y);T('pine',cx+330,p.y);T('flower',cx-150,p.y);T('flower',cx+150,p.y);T('shrub',cx+20,p.y);
+    if(p.y===-3900){world.shrines.push({x:cx+480,y:p.y,id:'shelf',opened:false,name:"The Second Hand"});enemy('shambler',cx-200,p.y)}
+    if(p.y===-5900){enemy('shambler',cx+220,p.y)}
   }
   // hidden cave off pocket 1 (x 3600..4700, y -2080..-1860)
   T('fungus',4650,-1860,{hidden:true});T('fungus',4350,-1860,{hidden:true});T('fungus',4000,-1860,{hidden:true});T('fungus',3700,-1860,{hidden:true});T('fungus',4180,-2080,{hidden:true,ceil:1});
   world.pickups.push({x:3850,y:-1900,kind:'amber',got:false},{x:4450,y:-1900,kind:'amber',got:false});
   world.shrines.push({x:3650,y:-1860,id:'lesson',opened:false,name:'The Lesson',lore:true});
   const segs=[
-    {sx:7400,sy:SLOT.floor,gx:pockets[0].x1+150,gy:pockets[0].y,gate:'C',gateY:-1900+560},
-    {sx:pockets[0].x0+900,sy:pockets[0].y,gx:pockets[1].x0-150,gy:pockets[1].y,gate:'D',gateY:-3900+560},
-    {sx:pockets[1].x1-900,sy:pockets[1].y,gx:pockets[2].x1+150,gy:pockets[2].y,gate:'E',gateY:-5900+560},
-    {sx:pockets[2].x0+700,sy:pockets[2].y,gx:SLOT.wallL+120,gy:SLOT.top+300,gate:'F',gateY:-7560+760,summit:1},
+    {sy:SLOT.floor,startSide:0,startW:SW,goal:pockets[0],gate:'C',gateY:-1900+560},
+    {sy:pockets[0].y,startSide:pockets[0].side,startW:pockets[0].w,goal:pockets[1],gate:'D',gateY:-3900+560},
+    {sy:pockets[1].y,startSide:pockets[1].side,startW:pockets[1].w,goal:pockets[2],gate:'E',gateY:-5900+560},
+    {sy:pockets[2].y,startSide:pockets[2].side,startW:pockets[2].w,goal:null,gy:SLOT.top+320,gate:'F',gateY:-7560+760,summit:1},
   ];
   let wingCount=0;
   for(const s of segs){
-    let cx=s.sx,cy=s.sy;const spots=[{y:cy,vine:false}];let steps=0;let next=2+(R()*2|0);
-    const spot=(y,vine)=>{spots.push({y,vine:!!vine})};
-    while(cy>s.gy+240&&steps<60){
-      steps++;const need=cy-s.gy;
-      const special=steps===next&&need>650;
-      if(special){
-        next=steps+3+(R()*2|0);
-        const side=(cx-SLOT.wallL<SLOT.wallR-cx)?-1:1;const wx=side<0?SLOT.wallL:SLOT.wallR;
-        // approach the wall with short jumps until close, then a hugging ledge
-        let guard=0;while(Math.abs(cx-(side<0?wx+110:wx-110))>150&&guard<4){guard++;const lw=rnd(160,220);const dx=side*rnd(200,290);let nx=clamp(cx+dx-lw/2,SLOT.wallL+20,SLOT.wallR-lw-20);const L=addLedge(nx,cy-rnd(120,200),lw,{});cx=L.x+L.w/2;cy=L.y;spot(cy);if(R()<.3)T('flower',cx,cy)}
-        const hw=190;const hx=side<0?wx:wx-hw;const H1=addLedge(hx,cy-rnd(110,170),hw,{wall:side});cx=H1.x+H1.w/2;cy=H1.y;spot(cy);
-        const need2=cy-s.gy;
-        if(R()<.62&&need2>640){ // climbvine
-          const h=clamp(rnd(420,780),300,need2-300);const vx=side<0?wx+22:wx-22;const v={x:vx,y0:cy,y1:cy-h,side};
-          v.target=T('vine',vx,cy,{vine:v});world.vines.push(v);
-          if(R()<.6){const m={x:wx,y:cy-h-rnd(80,240),h:260,side};m.target=T('moss',wx+(side<0?12:-12),m.y+m.h,{moss:m});world.moss.push(m)}
-          const tw=210;const tx=side<0?wx:wx-tw;const top=solid(tx,cy-h-10,tw,36,'rock',{shard:1,wall:side});cx=tx+tw/2;cy=top.y;spot(cy,true);
-        }else{ // dead pine bough
-          const by=cy-rnd(170,230);const bw=230;const bx=side<0?wx:wx-bw;const b={x:bx,y:by,w:bw,side};const pineY=by+rnd(280,400);
-          world.pines.push({x:side<0?wx+30:wx-30,y:pineY,side,h:pineY-by+120});
-          b.target=T('bough',side<0?wx+24:wx-24,by,{bough:b,r:280});world.oneway.push(b);cx=bx+bw/2;cy=by;spot(cy);
-        }
-      }else{ // jump ledge
-        let dir=Math.sign(s.gx-cx)||1;
-        if(need>900){dir=R()<.5?-1:1;if(cx<SLOT.wallL+700)dir=1;if(cx>SLOT.wallR-700)dir=-1}
-        const dbl=need>1200&&R()<.3;
-        let dx=dir*(dbl?rnd(330,400):rnd(200,290));let dy=dbl?-rnd(240,320):-rnd(165,235);
-        if(need<420)dy=-Math.max(120,need-220);
-        const lw=rnd(140,240);let nx=clamp(cx+dx-lw/2,SLOT.wallL+70,SLOT.wallR-lw-70);
-        const L=addLedge(nx,cy+dy,lw,{dbl});
-        if(R()<.35)T('flower',L.x+lw/2,L.y);if(R()<.15)T('shrub',L.x+lw/2+30,L.y);
-        cx=L.x+lw/2;cy=L.y;spot(cy);
+    let side=s.startSide,y=s.sy,w=s.startW;const gy=s.goal?s.goal.y:s.gy;
+    const spots=[{y,vine:false}];const spot=(yy,v)=>spots.push({y:yy,vine:!!v});
+    let steps=0,next=2+(R()*2|0),specials=0;
+    const decorate=(sh)=>{if(R()<.4)T('flower',sh.x+sh.w/2+(R()-.5)*sh.w*.5,sh.y);if(R()<.18)T('shrub',sh.x+sh.w/2,sh.y)};
+    while(y>gy+240&&steps<60){
+      steps++;const need=y-gy;
+      const canSame=side!==0&&w>=340;
+      if(steps===next&&need>650&&side!==0){ // vine or bough on the current wall
+        next=steps+3+(R()*2|0);const wx=side<0?SLOT.wallL:SLOT.wallR;specials++;
+        if(specials%2===1||need<520){const h=clamp(rnd(420,780),300,need-300);const vx=side<0?wx+22:wx-22;const v={x:vx,y0:y,y1:y-h,side};v.target=T('vine',vx,y,{vine:v});world.vines.push(v);
+          if(R()<.6){const m={x:wx,y:y-h-rnd(80,240),h:260,side};m.target=T('moss',wx+(side<0?12:-12),m.y+m.h,{moss:m});world.moss.push(m)}
+          const tw=rnd(260,420);const top=shelf(side,y-h-10,tw);decorate(top);y=top.y;w=tw;spot(y,true)}
+        else{const by=y-rnd(170,230);const bw=230;const bx=side<0?wx:wx-bw;const b={x:bx,y:by,w:bw,side};const pineY=by+rnd(260,380);
+          world.pines.push({x:side<0?wx+30:wx-30,y:pineY,side,h:pineY-by+120});b.target=T('bough',side<0?wx+24:wx-24,by,{bough:b,r:280});world.oneway.push(b);y=by;w=bw;spot(y)}
+      }else if(canSame&&R()<.45){ // stair-step up the same wall: a narrower shelf above
+        const nw=rnd(200,Math.max(200,w-140));const ny=y-rnd(200,235);const sh=shelf(side,ny,nw);decorate(sh);y=ny;w=nw;spot(y)
+      }else{ // cross the slot to a shelf on the other wall
+        const ns=side===0?(R()<.5?-1:1):-side;const dbl=need>1200&&R()<.3;
+        const gap=dbl?rnd(330,410):rnd(190,300);const curTip=side===0?0:w;let nw=clamp(SW-curTip-gap,200,SW-320);
+        const ny=y-(dbl?rnd(240,320):rnd(150,230));const sh=shelf(ns,ny,nw,{dbl});decorate(sh);side=ns;y=ny;w=nw;spot(y)
       }
-      if(steps%4===0&&wingCount<9){enemy('ashwing',clamp(cx+rnd(-500,500),SLOT.wallL+300,SLOT.wallR-300),cy-rnd(300,500));wingCount++}
+      if(steps%4===0&&wingCount<9){enemy('ashwing',SLOT.wallL+rnd(400,SW-400),y-rnd(300,500));wingCount++}
     }
-    if(s.summit){
-      const lw=200;const L=addLedge(SLOT.wallL,cy-rnd(120,180),lw,{wall:-1});cy=L.y;spot(cy);
-      const v={x:SLOT.wallL+22,y0:cy,y1:SLOT.top-6,side:-1};v.target=T('vine',v.x,cy,{vine:v,r:220,req:0});world.vines.push(v);
-      solid(SLOT.wallL-60,SLOT.top,60,60,'rock');
-    }else{
-      const lw=200;const gx=clamp(s.gx-lw/2,SLOT.wallL+20,SLOT.wallR-lw-20);
-      if(Math.abs(cx-s.gx)>320||cy-s.gy>240){const L=addLedge(gx,s.gy+rnd(170,230),lw,{});spot(L.y)}
-      spot(s.gy);
+    if(s.summit){ // last shelf on the left wall, then the long vine to the Crown
+      if(side!==-1){const gap=rnd(190,280);const nw=clamp(SW-w-gap,220,SW-320);const sh=shelf(-1,y-rnd(150,220),nw);y=sh.y;w=nw;side=-1;spot(y)}
+      const v={x:SLOT.wallL+22,y0:y,y1:SLOT.top-6,side:-1};v.target=T('vine',v.x,y,{vine:v,r:220,req:0});world.vines.push(v);
+    }else{ // approach shelf on the wall opposite the pocket, just below its lip
+      const g=s.goal;const os=-g.side;const gap=rnd(120,240);const nw=clamp(SW-g.w-gap,160,SW-g.w-100);
+      if(side===g.side&&y>gy+240){ // hop across first if we are on the pocket's wall
+        const cgap=rnd(190,300);const cw=clamp(SW-w-cgap,200,SW-320);const sh=shelf(os,y-rnd(150,220),cw);y=sh.y;w=cw;side=os;spot(y)}
+      if(side===g.side||y-gy>240||w<nw-40){const sh=shelf(os,gy+rnd(170,230),nw);y=sh.y;w=nw;side=os;spot(y)}
+      spot(gy);
     }
-    // gate: between two consecutive standing spots with a ≥200 gap, nearest to gateY, never across a vine
-    let best=null,bd=1e9;for(let i=1;i<spots.length;i++){const A=spots[i-1],B=spots[i];if(B.vine||A.y-B.y<190)continue;const gy=A.y-150;if(gy<s.gy+120)continue;const d=Math.abs(gy-s.gateY)+(i===spots.length-1?400:0);if(d<bd){bd=d;best=gy}}
-    if(best===null){best=Math.max(cy-190,s.gy+120)}
-    gate(SLOT.wallL,best,SLOT.wallR-SLOT.wallL,26,s.gate);
+    let best=null,bd=1e9;for(let i=1;i<spots.length;i++){const A=spots[i-1],B=spots[i];if(B.vine||A.y-B.y<190)continue;const gyy=A.y-150;if(gyy<gy+120)continue;const d=Math.abs(gyy-s.gateY)+(i===spots.length-1?400:0);if(d<bd){bd=d;best=gyy}}
+    if(best===null){best=Math.max(y-190,gy+120)}
+    gate(SLOT.wallL,best,SW,26,s.gate);
   }
   for(const x of [2750,2950,3800,4100,4400,4600])T('alpine',x,SLOT.top);
   T('stump',3250,SLOT.top,{r:260});
@@ -703,6 +687,20 @@ function drawTerrain(){worldT(1);
       ctx.strokeStyle='#5d6a48';ctx.lineWidth=7;ctx.lineCap='round';ctx.beginPath();for(let i=0;i<pts.length;i++){const [x,y]=pts[i];if(i)ctx.lineTo(x,y-1);else ctx.moveTo(x,y-1)}ctx.stroke();
       ctx.strokeStyle='rgba(0,0,0,.25)';ctx.lineWidth=2;ctx.beginPath();for(let i=0;i<pts.length;i++){const [x,y]=pts[i];if(i)ctx.lineTo(x,y+9);else ctx.moveTo(x,y+9)}ctx.stroke();
       if(s.pocket){ctx.fillStyle='rgba(0,0,0,.35)';ctx.fillRect(s.x,s.y+s.h-30,s.w,30)}
+    }else if(s.kind==='crag'){const base=s.y+s.h,fl=Math.min(70,s.h*.25);const g=ctx.createLinearGradient(0,s.y,0,base);g.addColorStop(0,'#6d716a');g.addColorStop(.3,'#484d47');g.addColorStop(1,'#262b28');ctx.fillStyle=g;
+      // a weathered outcrop: rounded shoulders, a slight belly, buried at the base
+      ctx.beginPath();ctx.moveTo(s.x-fl,base+30);ctx.quadraticCurveTo(s.x-fl-4,s.y+s.h*.55,s.x-6,s.y+s.h*.22);ctx.quadraticCurveTo(s.x-2,s.y+2,s.x+22,s.y+1);
+      for(let x=s.x+22;x<=s.x+s.w-22;x+=20)ctx.lineTo(x,s.y+(hash(x*.23)-.5)*7);ctx.quadraticCurveTo(s.x+s.w+2,s.y+2,s.x+s.w+6,s.y+s.h*.22);ctx.quadraticCurveTo(s.x+s.w+fl+4,s.y+s.h*.55,s.x+s.w+fl,base+30);ctx.closePath();ctx.fill();
+      ctx.strokeStyle='rgba(255,255,240,.2)';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(s.x+16,s.y+1);ctx.lineTo(s.x+s.w-16,s.y+1);ctx.stroke();
+      ctx.strokeStyle='rgba(0,0,0,.32)';ctx.lineWidth=1.5;for(let k=0;k<3;k++){const fx=s.x+s.w*(.25+k*.25);ctx.beginPath();ctx.moveTo(fx,s.y+12+k*8);ctx.quadraticCurveTo(fx+(hash(fx)-.5)*40,s.y+s.h*.4,fx+(hash(fx*3)-.5)*30,s.y+s.h*(.55+k*.12));ctx.stroke()}
+      ctx.fillStyle='rgba(0,0,0,.16)';for(let yy=s.y+44;yy<base-30;yy+=48){const f=(yy-s.y)/s.h;ctx.fillRect(s.x-fl*f*.8+6,yy+(hash(yy)-.5)*10,s.w+fl*f*1.6-12,3)}
+      ctx.fillStyle='rgba(95,110,72,.5)';for(let k=0;k<5;k++){const px=s.x+16+hash(k*11+s.x)*(s.w-32);ctx.beginPath();ctx.ellipse(px,s.y+3,10+hash(k+1)*10,4,0,0,TAU);ctx.fill()}
+    }else if(s.kind==='rock'&&s.shelf){const side=s.wall;const wx=side<0?s.x:s.x+s.w,tx=side<0?s.x+s.w:s.x;const under=s.y+s.h+Math.min(110,s.w*.35);
+      const g=ctx.createLinearGradient(0,s.y,0,under);g.addColorStop(0,'#6a6e66');g.addColorStop(.35,'#41473f');g.addColorStop(1,'#1f2524');ctx.fillStyle=g;
+      ctx.beginPath();ctx.moveTo(wx,s.y-2);const n=Math.max(2,Math.floor(s.w/24));for(let k=1;k<=n;k++){const f=k/n;ctx.lineTo(wx+(tx-wx)*f,s.y+(hash(k*7+s.y)-.5)*6+f*3)}
+      ctx.lineTo(tx+(side<0?-6:6),s.y+s.h*.8);ctx.lineTo(wx,under);ctx.closePath();ctx.fill();
+      ctx.strokeStyle='rgba(255,255,240,.22)';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(wx,s.y);ctx.lineTo(tx+(side<0?-8:8),s.y+2);ctx.stroke();
+      ctx.fillStyle='rgba(0,0,0,.28)';for(let yy=s.y+26;yy<under-10;yy+=30){const f=(yy-s.y)/(under-s.y);const len=(s.w)*(1-f*.8);ctx.fillRect(side<0?wx:wx-len,yy+(hash(yy)-.5)*6,len,3)}
     }else if(s.kind==='rock'){const g=ctx.createLinearGradient(0,s.y,0,s.y+s.h+40);g.addColorStop(0,'#6a6e66');g.addColorStop(.5,'#3f443f');g.addColorStop(1,'#24292a');ctx.fillStyle=g;
       const ex=s.wall?(s.wall<0?-40:0):0;const r=10;ctx.beginPath();ctx.moveTo(s.x+ex,s.y+r);ctx.quadraticCurveTo(s.x+ex,s.y,s.x+ex+r,s.y-2);
       for(let x=s.x+ex+r;x<s.x+s.w+(s.wall>0?40:0)-r;x+=22)ctx.lineTo(x,s.y+(hash(x*.3)-.5)*5);ctx.lineTo(s.x+s.w+(s.wall>0?40:0)-r,s.y-2);ctx.quadraticCurveTo(s.x+s.w+(s.wall>0?40:0),s.y,s.x+s.w+(s.wall>0?40:0),s.y+r);
