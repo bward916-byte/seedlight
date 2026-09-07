@@ -180,7 +180,8 @@ function buildWorld(){
   for(const [x,y] of oaks)T('oak',x,y);
   T('ancient',2150,-460,{hidden:true});
   const flowers=[[420,-40],[1050,-40],[1620,-80],[2000,-80],[2350,-80],[2820,-120],[3350,-320],[3500,-120],[3750,-80],[4100,-500],[4300,-80],[4750,-80],[5250,-40],[5900,-40],[6450,-40]];
-  for(const [x,y] of flowers)T('flower',x,y);
+  for(const [x,y] of flowers)T('flower',x,y,{hidden:x===4100&&y===-500});
+  world.pickups.push({x:4110,y:-500,kind:'amber',got:false});
   for(const [x,y] of [[560,-40],[1480,-40],[2550,-80],[3200,-120],[4200,-80],[5700,-40]])T('shrub',x,y);
   // shrines
   w.shrines.push({x:2560,y:-80,id:'vale',opened:false,name:"The Elder's Hand"});
@@ -399,7 +400,7 @@ function bakeTree(t){
    GAME STATE, PLAYER, ENEMIES, SPELLS
    ============================================================ */
 const P={w:34,h:96,run:430,acc:3200,g:2600,jv:1230,dj:1030,climb:280,coyote:.1,buf:.12,maxFall:1900};
-const G={mode:'title',t:0,cine:null,letter:0,fade:1,fadeT:1,menu:null,msg:'',msgT:0,dark:0,dawn:0,ashV:1,stump:0,skipT:0,hasSave:false,end:false,red:0,zoomPunch:0,cineText:'',cineTextA:0,cineBig:false,titleA:0,climbT:0,verdT:0,paused:false,over:''};
+const G={mode:'title',t:0,cine:null,letter:0,fade:1,fadeT:1,menu:null,msg:'',msgT:0,dark:0,dawn:0,ashV:1,stump:0,skipT:0,hasSave:false,end:false,red:0,zoomPunch:0,cineText:'',cineTextA:0,cineBig:false,titleA:0,climbT:0,verdT:0,paused:false,over:'',bumpT:0,beaconT:0};
 const player={x:300,y:-40,vx:0,vy:0,ground:false,face:1,jumps:0,coyote:0,buf:0,onVine:null,vineCd:0,wallTouch:0,wallSlide:false,wallSide:0,petals:5,maxPetals:5,inv:0,hurtT:0,
   motes:{sun:0,dew:0,spore:0,amber:0},up:{double:false,aura:1,quick:1,petal:0,magnet:1},
   spells:[{id:'thorn',name:'Thornshot',cd:0,max:.6,own:true},{id:'root',name:'Rootgrasp',cd:0,max:6,own:false},{id:'veil',name:'Pollen Veil',cd:0,max:12,own:false},{id:'flare',name:'Sunflare',cd:0,max:20,own:false},{id:'sprout',name:'Sprout Step',cd:0,max:4,own:false}],
@@ -410,7 +411,7 @@ const auraR=()=>AURA[player.up.aura]||150;
 const magnetR=()=>260+player.up.magnet*80;
 const quick=()=>[1,1,1.3,1.6][player.up.quick]||1;
 function body(){return{x:player.x-17,y:player.y-96,w:34,h:96}}
-function colliders(){const a=world.solids.slice();for(const g of world.gates)if(!g.open)a.push({x:g.x,y:g.y,w:g.w,h:g.h*(1-g.anim),kind:'gate'});return a}
+function colliders(){const a=world.solids.slice();for(const g of world.gates)if(!g.open)a.push({x:g.x,y:g.y,w:g.w,h:g.h*(1-g.anim),kind:'gate',ref:g});return a}
 function approach(v,t,a){return v<t?Math.min(v+a,t):Math.max(v-a,t)}
 function inCave(x,y){for(const c of world.caves)if(x>=c.x&&x<c.x+c.w&&y>=c.y&&y<=c.y+c.h+10)return c;return null}
 function msg(s,t=3){G.msg=s;G.msgT=t}
@@ -506,6 +507,7 @@ function updatePlayer(dt){
       const nx=p.vx>=0?s.x+22:s.x+s.w-22;const above={x:nx-17,y:top-96,w:34,h:96};
       if(!cols.some(o=>o!==s&&rectsHit(above,o))){p.y=top;p.x=nx;p.vy=0;p.vx=0;p.ground=true;p.jumps=0;p.anim.mantle=.3;p.lastGround={x:p.x,y:p.y};spawn('dust',p.x,p.y,3,{v:80,life:.4,r:4,col:'#8a8270',a:.5});b=body();continue}}
     if(p.vx>0){p.x=s.x-17.01;p.wallTouch=1}else if(p.vx<0){p.x=s.x+s.w+17.01;p.wallTouch=-1}else{const l=p.x-s.x,r=s.x+s.w-p.x;if(l<r)p.x=s.x-17.01;else p.x=s.x+s.w+17.01}
+    if(s.kind==='gate'&&s.ref&&ctl)gateBump(s.ref);
     p.vx=0;b=body();}
   // wall slide via moss
   p.wallSlide=false;
@@ -515,7 +517,7 @@ function updatePlayer(dt){
   let landed=null;
   for(const s of cols){if(!rectsHit(b,s))continue;
     if(p.vy>=0&&prevFeet<=s.y+10){p.y=s.y;landed=s;p.vy=0;b=body()}
-    else if(p.vy<0&&prevFeet-96>=s.y+s.h-10){p.y=s.y+s.h+96;p.vy=0;b=body()}
+    else if(p.vy<0&&prevFeet-96>=s.y+s.h-10){p.y=s.y+s.h+96;p.vy=0;b=body();if(s.kind==='gate'&&s.ref&&ctl)gateBump(s.ref)}
     else{const l=b.x+b.w-s.x,r=s.x+s.w-b.x;if(l<r)p.x=s.x-17.01;else p.x=s.x+s.w+17.01;b=body()}}
   if(!landed&&p.vy>=0&&!(ctl&&inp.d)){for(const o of world.oneway){if(!o.target.alive&&!(o.canopy&&o.target.t>.85))continue;const oy=o.y-(o.canopy?0:0);if(p.x>o.x-6&&p.x<o.x+o.w+6&&prevFeet<=oy+4&&p.y>=oy){p.y=oy;landed=o;p.vy=0;o.bounce=.4;break}}}
   if(landed){if(!wasGround){const fall=p.y-p.apex;p.anim.land=.18;spawn('dust',p.x,p.y,fall>600?8:3,{v:140,vy:-40,life:.5,r:5,col:'#8a8270',a:.45});
@@ -531,6 +533,8 @@ function updatePlayer(dt){
   for(const k of world.pickups){if(k.got)continue;if(Math.abs(k.x-p.x)<50&&Math.abs(k.y-(p.y-40))<80){k.got=true;p.motes.amber++;spawn('spark',k.x,k.y,18,{v:220,life:.9,r:3,col:'#ffd86b'});msg('Amber. Heavy as a coin, warm as a hand.',3)}}
   updateChains(dt);
 }
+function gateBump(g){if(G.bumpT>0)return;G.bumpT=4;g.pulse=1;const gl=g.glade;if(!gl)return;const left=gl.req.filter(t=>!t.alive).length;
+  msg(left>0?'The vine gate holds. '+left+' more to wake in '+gl.name+'.':'The vine gate holds.',4);G.beaconT=16}
 function hurt(n,src){const p=player;if(p.inv>0||p.dead>0)return;
   if(p.veil>0){p.veil=0;spawn('pollen',p.x,p.y-50,20,{v:200,life:1,r:3,col:'#ffe08a'});p.inv=.6;return}
   p.petals-=n;p.inv=1.2;p.hurtT=.45;cam.shake=Math.max(cam.shake,14);if(src!=='fall'){p.vy=-460;p.vx=-p.face*320}
@@ -721,6 +725,7 @@ function drawTerrain(){worldT(1);
   for(const d of world.pines){if(!inView(d.x,d.y,400))continue;ctx.strokeStyle='#2a2a26';ctx.lineWidth=12;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(d.x,d.y);ctx.lineTo(d.x+d.side*-8,d.y-d.h);ctx.stroke();ctx.lineWidth=5;for(let k=0;k<5;k++){const yy=d.y-d.h*(.3+k*.15);ctx.beginPath();ctx.moveTo(d.x,yy);ctx.lineTo(d.x-d.side*(30+hash(k+d.y)*40),yy-24);ctx.stroke()}}
 }
 function drawGates(){worldT(1);for(const g of world.gates){if(g.open&&g.anim>=1)continue;if(!inView(g.x+g.w/2,g.y+g.h/2,Math.max(g.w,g.h)))continue;const sc=1-g.anim;if(sc<=0)continue;
+  if(g.pulse>0){const cx=g.x+g.w/2,cy=g.y+g.h/2;const rr=Math.max(g.w,g.h)*.7;const gg=ctx.createRadialGradient(cx,cy,10,cx,cy,rr);gg.addColorStop(0,'rgba(160,240,140,'+.35*g.pulse+')');gg.addColorStop(1,'rgba(160,240,140,0)');ctx.fillStyle=gg;ctx.fillRect(cx-rr,cy-rr,rr*2,rr*2)}
   ctx.save();ctx.translate(g.x,g.y);const horiz=g.w>g.h;ctx.lineCap='round';
   for(let i=0;i<7;i++){const f=(i+.5)/7;ctx.strokeStyle=i%2?'#2c4a2a':'#1c3220';ctx.lineWidth=6;ctx.beginPath();
     if(horiz){const y=g.h*f;ctx.moveTo(0,y);for(let x=0;x<g.w*sc;x+=60)ctx.quadraticCurveTo(x+30,y+(i%2?-14:14),x+60,y)}else{const x=g.w*f;ctx.moveTo(x,g.h);for(let y=g.h;y>g.h*(1-sc);y-=50)ctx.quadraticCurveTo(x+(i%2?-12:12),y-25,x,y-50)}ctx.stroke()}
@@ -736,6 +741,10 @@ function drawTarget(t){switch(t.kind){
   case 'vine':drawVine(t.vine,t.t);break;case 'moss':drawMoss(t.moss,t.t);break;case 'bough':drawBough(t.bough,t.t);break;
   case 'fungus':drawFungus(t.t,t.x,t.y,t.seed,t.ceil);break;case 'stump':drawStump(t.x,t.y,G.stump);break}}
 function drawPlants(){worldT(1);for(const t of world.targets){if(!inView(t.x,t.y,t.kind==='vine'?900:t.kind==='ancient'?700:400))continue;drawTarget(t)}
+  // seed beacons: soft shafts of light from what still sleeps in this glade
+  {const g=currentGlade();if(g&&g.req.length&&!g.done){const done=g.req.filter(t=>t.alive).length;const strong=G.beaconT>0;const a=strong?.22*Math.min(1,G.beaconT/2):(done/g.req.length>=.7?.09:0);
+    if(a>0){ctx.globalCompositeOperation='lighter';for(const t of g.req){if(t.alive||!inView(t.x,t.y,700))continue;const pulse=.75+.25*Math.sin(TIME*2.5+t.x*.01);const gr=ctx.createLinearGradient(0,t.y-20,0,t.y-560);gr.addColorStop(0,'rgba(255,214,120,'+a*pulse+')');gr.addColorStop(1,'rgba(255,214,120,0)');ctx.fillStyle=gr;ctx.fillRect(t.x-22,t.y-560,44,540);
+      const rg=ctx.createRadialGradient(t.x,t.y-10,2,t.x,t.y-10,70);rg.addColorStop(0,'rgba(255,214,120,'+a*2*pulse+')');rg.addColorStop(1,'rgba(255,214,120,0)');ctx.fillStyle=rg;ctx.fillRect(t.x-70,t.y-80,140,140)}ctx.globalCompositeOperation='source-over'}}}
   // aura marker: faint ring around player
   const p=player;if(p.dead<=0&&G.mode==='play'){const r=auraR();ctx.strokeStyle='rgba(240,181,69,'+(.08+.05*Math.sin(TIME*3))+')';ctx.lineWidth=2;ctx.setLineDash([6,14]);ctx.beginPath();ctx.arc(p.x,p.y-48,r,0,TAU);ctx.stroke();ctx.setLineDash([])}}
 function drawShrines(){worldT(1);for(const s of world.shrines){if(!inView(s.x,s.y,300))continue;ctx.save();ctx.translate(s.x,s.y);
@@ -950,7 +959,7 @@ function updateGame(dt){const p=player;
   const g=currentGlade();const ashT=g?g.ash:0;G.ashV+=(ashT-G.ashV)*(1-Math.exp(-dt*2));
   if(ashT>.3&&Math.random()<.35)spawn('ash',cam.x+(Math.random()-.5)*LW/cam.z,cam.y-H/(2*cam.z)-20,1,{v:20,vy:40,life:9,r:2.5,col:'#8f8f86',a:.55*ashT});
   const cv2=inCave(p.x,p.y);const darkT=cv2?cv2.amb:0;G.dark+=(darkT-G.dark)*(1-Math.exp(-dt*2.5));
-  if(G.msgT>0)G.msgT-=dt;
+  if(G.msgT>0)G.msgT-=dt;if(G.bumpT>0)G.bumpT-=dt;if(G.beaconT>0)G.beaconT-=dt;for(const gt of world.gates)if(gt.pulse>0)gt.pulse-=dt*.6;
   // crown reveal trigger
   if(!G.cine&&!G.crownSeen&&p.ground&&p.y<=SLOT.top+2&&p.x<3900&&p.x>2300)revealCine();
   // arch hint
