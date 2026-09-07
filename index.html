@@ -555,11 +555,11 @@ function hurt(n,src){const p=player;if(p.inv>0||p.dead>0)return;
 }
 function respawn(){const p=player;p.x=p.check.x;p.y=p.check.y;p.vx=0;p.vy=0;p.petals=Math.max(3,Math.min(p.maxPetals,3));p.inv=1.5;p.dead=0;p.ground=true;p.onVine=null;p.apex=p.y;p.lastGround={x:p.x,y:p.y};initChains();cam.x=p.x;cam.y=p.y-160;G.fadeT=0;G.fade=1;}
 /* ---- chains (hair / cape verlet) ---- */
-function initChains(){const p=player;const mk=(n,len)=>{const a=[];for(let i=0;i<n;i++)a.push({x:p.x-p.face*i*len,y:p.y-80+i*4,px:p.x-p.face*i*len,py:p.y-80+i*4,len});return a};p.hair=mk(8,9);p.cape=mk(7,11);p.cape2=mk(6,11)}
+function initChains(){const p=player;const mk=(n,len)=>{const a=[];for(let i=0;i<n;i++)a.push({x:p.x-p.face*i*len,y:p.y-80+i*4,px:p.x-p.face*i*len,py:p.y-80+i*4,len});return a};p.hair=mk(7,7.5);p.cape=mk(2,8);p.cape2=mk(2,8)}
 function updateChains(dt){const p=player;const head=headPos();const sh=shoulderPos();
   const step=(ch,ax,ay,windY)=>{ch[0].x=ax;ch[0].y=ay;for(let i=1;i<ch.length;i++){const c=ch[i];const vx=(c.x-c.px)*.92,vy=(c.y-c.py)*.92;c.px=c.x;c.py=c.y;c.x+=vx+(-p.face*(140+Math.abs(p.vx)*.35)+Math.sin(TIME*3+i)*30)*dt*dt*60;c.y+=vy+(windY+Math.sin(TIME*4+i*.7)*60)*dt*dt*60}
     for(let k=0;k<3;k++)for(let i=1;i<ch.length;i++){const a=ch[i-1],b=ch[i];let dx=b.x-a.x,dy=b.y-a.y;const d=Math.hypot(dx,dy)||1;const diff=(d-b.len)/d;const f=i===1?1:.5;b.x-=dx*diff*f;b.y-=dy*diff*f;if(i>1){a.x+=dx*diff*(1-f)*.5;a.y+=dy*diff*(1-f)*.5}}};
-  step(p.hair,head.x-p.face*6,head.y-8,420);step(p.cape,sh.x-p.face*8,sh.y,760);step(p.cape2,sh.x-p.face*4,sh.y+6,700);
+  step(p.hair,head.x-p.face*7,head.y-6,380);step(p.cape,sh.x-p.face*7,sh.y+2,520);
 }
 function headPos(){const p=player;const a=p.anim;const bob=a.state==='run'?Math.abs(Math.sin(a.phase))*4:a.state==='idle'?Math.sin(a.phase)*2:0;const crouch=a.land>0?10:0;return{x:p.x+p.face*2,y:p.y-96+14+bob+crouch}}
 function shoulderPos(){const h=headPos();return{x:h.x-player.face*2,y:h.y+20}}
@@ -765,37 +765,40 @@ function wrenPose(){const p=player,a=p.anim,f=p.face;const hip={x:p.x,y:p.y-44};
   if(a.cast>0){const c=smooth(a.cast/.25);lh={x:sh.x+f*(34+c*10),y:sh.y+4};la={x:sh.x+f*20,y:sh.y+10}}
   if(a.land>0){hip.y+=8;head.y+=8;sh.y+=8}
   return{hip,head,sh,lk,lf,rk,rf,la,lh,ra,rh}}
-function drawWren(sil){const p=player;const P0=wrenPose();const f=p.face;
-  const body=(col,off)=>{ctx.strokeStyle=col;ctx.fillStyle=col;ctx.lineCap='round';ctx.lineJoin='round';ctx.save();ctx.translate(off,0);
-    // hair (behind)
-    ctx.lineWidth=13;ctx.beginPath();ctx.moveTo(p.hair[0].x,p.hair[0].y);for(let i=1;i<p.hair.length;i++){ctx.lineWidth=13-i*1.3;ctx.lineTo(p.hair[i].x,p.hair[i].y)}ctx.stroke();
-    // cape
-    const cape=(ch,w)=>{ctx.beginPath();ctx.moveTo(P0.sh.x-f*6,P0.sh.y);for(let i=0;i<ch.length;i++)ctx.lineTo(ch[i].x,ch[i].y);for(let i=ch.length-1;i>=0;i--)ctx.lineTo(ch[i].x-f*w*(1-i/ch.length),ch[i].y+4);ctx.closePath();ctx.fill()};cape(p.cape2,26);cape(p.cape,22);
-    // legs
-    ctx.lineWidth=11;ctx.beginPath();ctx.moveTo(P0.hip.x,P0.hip.y);ctx.lineTo(P0.rk.x,P0.rk.y);ctx.lineTo(P0.rf.x,P0.rf.y);ctx.stroke();
-    ctx.beginPath();ctx.moveTo(P0.hip.x,P0.hip.y);ctx.lineTo(P0.lk.x,P0.lk.y);ctx.lineTo(P0.lf.x,P0.lf.y);ctx.stroke();
-    // skirt
-    ctx.beginPath();ctx.moveTo(P0.hip.x-16,P0.hip.y-4);ctx.lineTo(P0.hip.x+16,P0.hip.y-4);ctx.lineTo(P0.hip.x+22,P0.hip.y+22);ctx.lineTo(P0.hip.x-22,P0.hip.y+22);ctx.closePath();ctx.fill();
-    // torso
-    ctx.lineWidth=18;ctx.beginPath();ctx.moveTo(P0.sh.x,P0.sh.y+2);ctx.lineTo(P0.hip.x,P0.hip.y);ctx.stroke();
-    // back arm
-    ctx.lineWidth=9;ctx.beginPath();ctx.moveTo(P0.sh.x,P0.sh.y+2);ctx.lineTo(P0.ra.x,P0.ra.y);ctx.lineTo(P0.rh.x,P0.rh.y);ctx.stroke();
-    // head + neck
-    ctx.lineWidth=8;ctx.beginPath();ctx.moveTo(P0.sh.x,P0.sh.y);ctx.lineTo(P0.head.x,P0.head.y+10);ctx.stroke();
-    ctx.beginPath();ctx.arc(P0.head.x,P0.head.y,14,0,TAU);ctx.fill();
-    // front arm (lantern)
-    ctx.lineWidth=9;ctx.beginPath();ctx.moveTo(P0.sh.x,P0.sh.y+2);ctx.lineTo(P0.la.x,P0.la.y);ctx.lineTo(P0.lh.x,P0.lh.y);ctx.stroke();
+function drawWren(sil){const p=player;const P0=wrenPose();const f=p.face;const a=p.anim;const run=Math.min(1,Math.abs(p.vx)/P.run);
+  const sh=P0.sh,hip=P0.hip;const sway=-f*run*9+Math.sin(a.phase)*run*2;const hemY=hip.y+24;
+  const lx=P0.lh.x+f*2,ly=P0.lh.y+8;
+  const body=(col,off)=>{ctx.save();ctx.translate(off,0);ctx.strokeStyle=col;ctx.fillStyle=col;ctx.lineCap='round';ctx.lineJoin='round';
+    // hair: tapered flowing stroke
+    for(let i=1;i<p.hair.length;i++){ctx.lineWidth=Math.max(1.5,9.5-i*1.3);ctx.beginPath();ctx.moveTo(p.hair[i-1].x,p.hair[i-1].y);ctx.lineTo(p.hair[i].x,p.hair[i].y);ctx.stroke()}
+    // back leg, back arm
+    ctx.lineWidth=6.5;ctx.beginPath();ctx.moveTo(hip.x-f*3,hip.y);ctx.lineTo(P0.rk.x,P0.rk.y);ctx.lineTo(P0.rf.x,P0.rf.y);ctx.stroke();
+    ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(sh.x-f*4,sh.y+3);ctx.lineTo(P0.ra.x,P0.ra.y);ctx.lineTo(P0.rh.x,P0.rh.y);ctx.stroke();
+    // dress: narrow shoulders, waist, flaring hem that trails when she runs
+    ctx.beginPath();ctx.moveTo(sh.x-8,sh.y-1);ctx.lineTo(sh.x+8,sh.y-1);ctx.quadraticCurveTo(hip.x+7,hip.y-8,hip.x+16+sway*.3,hemY);
+    ctx.quadraticCurveTo(hip.x+6+sway*.5,hemY+7,hip.x+sway*.6,hemY+2);ctx.quadraticCurveTo(hip.x-8+sway*.8,hemY+8,hip.x-17+sway,hemY);
+    ctx.quadraticCurveTo(hip.x-7,hip.y-8,sh.x-8,sh.y-1);ctx.closePath();ctx.fill();
+    // front leg
+    ctx.lineWidth=6.5;ctx.beginPath();ctx.moveTo(hip.x+f*3,hip.y);ctx.lineTo(P0.lk.x,P0.lk.y);ctx.lineTo(P0.lf.x,P0.lf.y);ctx.stroke();
+    // neck, head, small chin so she reads as facing forward
+    ctx.lineWidth=4.5;ctx.beginPath();ctx.moveTo(sh.x,sh.y);ctx.lineTo(P0.head.x,P0.head.y+8);ctx.stroke();
+    ctx.beginPath();ctx.arc(P0.head.x,P0.head.y,12,0,TAU);ctx.fill();
+    ctx.beginPath();ctx.moveTo(P0.head.x+f*7,P0.head.y-3);ctx.lineTo(P0.head.x+f*14,P0.head.y+2);ctx.lineTo(P0.head.x+f*6,P0.head.y+7);ctx.closePath();ctx.fill();
+    // front arm and the lantern hanging from the hand
+    ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(sh.x+f*4,sh.y+3);ctx.lineTo(P0.la.x,P0.la.y);ctx.lineTo(P0.lh.x,P0.lh.y);ctx.stroke();
+    ctx.lineWidth=1.8;ctx.beginPath();ctx.moveTo(P0.lh.x,P0.lh.y);ctx.lineTo(lx,ly);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(lx-4,ly);ctx.lineTo(lx+4,ly);ctx.lineTo(lx+6,ly+15);ctx.lineTo(lx-6,ly+15);ctx.closePath();ctx.fill();
     ctx.restore()};
   if(sil){body('rgba(0,0,0,1)',0);return}
   const flick=p.inv>0&&Math.floor(TIME*20)%2===0;
   ctx.globalAlpha=p.dead>0?Math.max(0,p.dead/1.8):(flick?.45:1);
-  // lantern glow behind
-  const lx=P0.lh.x+f*4,ly=P0.lh.y+6;
-  ctx.globalCompositeOperation='lighter';const g=ctx.createRadialGradient(lx,ly,2,lx,ly,150);g.addColorStop(0,'rgba(255,214,120,.55)');g.addColorStop(.3,'rgba(255,190,90,.22)');g.addColorStop(1,'rgba(255,190,90,0)');ctx.fillStyle=g;ctx.fillRect(lx-150,ly-150,300,300);ctx.globalCompositeOperation='source-over';
-  body('#f2cf7a',f*2.2);   // rim light
+  const gx=lx,gy=ly+8;
+  ctx.globalCompositeOperation='lighter';const g=ctx.createRadialGradient(gx,gy,2,gx,gy,150);g.addColorStop(0,'rgba(255,214,120,.5)');g.addColorStop(.3,'rgba(255,190,90,.2)');g.addColorStop(1,'rgba(255,190,90,0)');ctx.fillStyle=g;ctx.fillRect(gx-150,gy-150,300,300);ctx.globalCompositeOperation='source-over';
+  body('#f2cf7a',f*1.6);   // rim light on the lantern side
   body('#0e1810',0);       // ink
-  // lantern core
-  ctx.fillStyle='#fff3c4';ctx.beginPath();ctx.arc(lx,ly,5,0,TAU);ctx.fill();ctx.fillStyle='rgba(255,220,140,.8)';ctx.beginPath();ctx.arc(lx,ly,9,0,TAU);ctx.fill();
+  // lantern flame and the leaves in her hair
+  ctx.fillStyle='#ffe9a8';ctx.fillRect(lx-3,ly+4,6,8);ctx.fillStyle='rgba(255,236,170,.9)';ctx.beginPath();ctx.arc(lx,ly+8,3,0,TAU);ctx.fill();
+  const h=p.hair;for(const k of [3,h.length-1]){const q=h[k],r=h[k-1];const an=Math.atan2(q.y-r.y,q.x-r.x);ctx.fillStyle=k===3?'#5fae4b':'#86c56a';ctx.beginPath();ctx.ellipse(q.x,q.y,7,3.2,an+.6,0,TAU);ctx.fill()}
   if(p.veil>0){ctx.strokeStyle='rgba(255,224,138,'+(.5+.3*Math.sin(TIME*10))+')';ctx.lineWidth=3;ctx.setLineDash([8,10]);ctx.beginPath();ctx.arc(p.x,p.y-48,64,TIME*2,TIME*2+TAU);ctx.stroke();ctx.setLineDash([])}
   ctx.globalAlpha=1}
 /* ---- enemies ---- */
@@ -831,7 +834,7 @@ function ls(x,y){const [sx,sy]=w2s(x,y);return[sx*LS,sy*LS]}
 function w2s(x,y){return[LW/2+(x-cam.x)*cam.z,H/2+(y-cam.y)*cam.z]}
 function punch(c,x,y,r,a,soft){const[sx,sy]=ls(x,y);const rr=r*cam.z*LS;const g=c.createRadialGradient(sx,sy,0,sx,sy,rr);if(soft){g.addColorStop(0,'rgba(0,0,0,'+a+')');g.addColorStop(.3,'rgba(0,0,0,'+a*.8+')');g.addColorStop(.6,'rgba(0,0,0,'+a*.35+')');g.addColorStop(1,'rgba(0,0,0,0)')}else{g.addColorStop(0,'rgba(0,0,0,'+a+')');g.addColorStop(.5,'rgba(0,0,0,'+a*.6+')');g.addColorStop(1,'rgba(0,0,0,0)')}c.fillStyle=g;c.fillRect(sx-rr,sy-rr,rr*2,rr*2)}
 function drawLights(){if(G.dark<.02)return;const c=lctx;c.setTransform(1,0,0,1,0,0);c.globalCompositeOperation='source-over';c.fillStyle='rgba(4,6,10,'+G.dark+')';c.fillRect(0,0,lightC.width,lightC.height);
-  c.globalCompositeOperation='destination-out';const p=player;const P0=wrenPose();punch(c,P0.lh.x,P0.lh.y,420*p.lantern,1);
+  c.globalCompositeOperation='destination-out';const p=player;const P0=wrenPose();punch(c,P0.lh.x+p.face*2,P0.lh.y+16,420*p.lantern,1);
   for(const t of world.targets){if(t.kind==='fungus'&&t.t>0&&inView(t.x,t.y,400))punch(c,t.x,t.y-30*(t.ceil?-1:1),260*grow(t.t),.95)}
   for(const m of motes)if(inView(m.x,m.y,100))punch(c,m.x,m.y,50,.8);for(const b of bolts)punch(c,b.x,b.y,90,.9);for(const k of world.pickups)if(!k.got&&inView(k.x,k.y,200))punch(c,k.x,k.y-30,120,.8);
   for(const s of world.shrines)if(inView(s.x,s.y,300))punch(c,s.x,s.y-100,180,.7);
@@ -890,8 +893,10 @@ function drawTitle(){screenT();ctx.fillStyle='#0f150e';ctx.fillRect(0,0,LW,H);
   // silhouette hills
   ctx.fillStyle='#0a0f0a';ctx.beginPath();ctx.moveTo(0,H);for(let x=0;x<=LW;x+=40)ctx.lineTo(x,H*.78-fbm(x*.0016+5,3)*120);ctx.lineTo(LW,H);ctx.closePath();ctx.fill();
   // small figure with lantern
-  const fx=LW/2,fy=H*.72;ctx.fillStyle='#070b07';ctx.beginPath();ctx.arc(fx,fy-70,9,0,TAU);ctx.fill();ctx.lineCap='round';ctx.strokeStyle='#070b07';ctx.lineWidth=11;ctx.beginPath();ctx.moveTo(fx,fy-58);ctx.lineTo(fx,fy-24);ctx.moveTo(fx,fy-24);ctx.lineTo(fx-8,fy);ctx.moveTo(fx,fy-24);ctx.lineTo(fx+9,fy);ctx.stroke();ctx.lineWidth=7;ctx.beginPath();ctx.moveTo(fx,fy-52);ctx.lineTo(fx+22,fy-38);ctx.stroke();
-  ctx.fillStyle='#fff3c4';ctx.beginPath();ctx.arc(fx+26,fy-34,4,0,TAU);ctx.fill();
+  const fx=LW/2,fy=H*.72;ctx.fillStyle='#070b07';ctx.strokeStyle='#070b07';ctx.lineCap='round';ctx.beginPath();ctx.arc(fx,fy-72,9,0,TAU);ctx.fill();ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(fx,fy-64);ctx.lineTo(fx,fy-56);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(fx-6,fy-56);ctx.lineTo(fx+6,fy-56);ctx.quadraticCurveTo(fx+6,fy-42,fx+13,fy-20);ctx.quadraticCurveTo(fx,fy-14,fx-14,fy-20);ctx.quadraticCurveTo(fx-6,fy-42,fx-6,fy-56);ctx.closePath();ctx.fill();
+  ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(fx-4,fy-24);ctx.lineTo(fx-7,fy);ctx.moveTo(fx+4,fy-24);ctx.lineTo(fx+8,fy);ctx.stroke();ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(fx+4,fy-52);ctx.lineTo(fx+22,fy-40);ctx.stroke();ctx.lineWidth=7;ctx.beginPath();ctx.moveTo(fx-10,fy-70);ctx.quadraticCurveTo(fx-22,fy-64,fx-26,fy-50);ctx.stroke();
+  ctx.fillStyle='#070b07';ctx.fillRect(fx+19,fy-38,8,11);ctx.fillStyle='#fff3c4';ctx.fillRect(fx+21,fy-35,4,6);
   ctx.fillStyle='rgba(236,230,212,'+a+')';ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='500 150px '+SERIF;ctx.save();ctx.translate(LW/2,H*.32);if(H<1000)ctx.font='500 120px '+SERIF;ctx.fillText('S E E D L I G H T',0,0);ctx.restore();
   ctx.font='italic 500 30px '+SERIF;ctx.fillStyle='rgba(170,166,147,'+a+')';ctx.fillText('a young Mother Nature climbs a dead mountain to wake the world',LW/2,H*.32+96);
   const touch=isTouch&&touchSeen||isTouch;ctx.font='500 24px '+SANS;ctx.fillStyle='rgba(236,230,212,'+a*(.6+.4*Math.sin(TIME*2))+')';
